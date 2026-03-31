@@ -1,0 +1,41 @@
+name: Build ESPHome Firmware
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install ESPHome
+        run: pip install esphome
+
+      - name: Build firmware
+        run: |
+          mkdir -p build
+          esphome compile esphome/f1_led_strip.yaml
+          cp .esphome/build/f1_led_strip/.pioenvs/f1_led_strip/firmware.bin build/f1-lamp.bin
+
+      - name: Generate version.json
+        run: |
+          VERSION=$(date +"%Y.%m.%d-%H%M")
+          echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp.bin\" }" > build/version.json
+
+      - name: Commit build artifacts
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add build/
+          git commit -m "Auto-build firmware"
+          git push
