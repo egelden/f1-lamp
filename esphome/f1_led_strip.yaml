@@ -1,1 +1,345 @@
-test
+esphome:
+  name: f1_led_strip
+
+  on_boot:
+    priority: -10
+    then:
+      - light.turn_on:
+          id: f1_strip
+          effect: f1_live
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  reboot_timeout: 0s
+
+  ap:
+    ssid: "F1Lamp"
+    password: "12345678"
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(wifi_ok) = true;
+
+captive_portal:
+
+esp32_improv:
+  authorizer: none
+
+web_server:
+  port: 80
+  version: 3
+
+mqtt:
+  broker: gelden.ddns.net
+  port: 2105
+  username: f1reader
+  password: f1reader
+  discovery: false
+  reboot_timeout: 0s
+  keepalive: 15s
+  log_topic: none
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(mqtt_ok) = true;
+      - script.execute: try_startup
+
+  on_message:
+    - topic: f1/f1_track_status/state
+      qos: 0
+      then:
+        - lambda: |-
+            id(track_state) = x.c_str();
+            std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
+
+    - topic: f1/f1_race_week/state
+      qos: 0
+      then:
+        - lambda: |-
+            std::string s = x.c_str();
+            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+            id(raceweek_state) = (s == "ON");
+
+globals:
+  - id: track_state
+    type: std::string
+    initial_value: '"UNAVAILABLE"'
+    restore_value: false
+
+  - id: raceweek_state
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  # Startup control
+  - id: startup_done
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  - id: wifi_ok
+    type: bool
+    initial_value: "false"
+
+  - id: mqtt_ok
+    type: bool
+    initial_value: "false"
+
+text_sensor:
+  - platform: template
+    name: "OTA Update"
+    id: ota_link
+    icon: "mdi:update"
+    lambda: |-
+      return "<a href=\"/update\"><button style='padding:10px;font-size:16px;'>OTA Update</button></a>";
+    update_interval: never
+
+script:
+  - id: try_startup
+    mode: queued
+    then:
+      - lambda: |-
+          if (id(startup_done)) return;
+          if (!id(wifi_ok) || !id(mqtt_ok)) return;
+      - light.turn_on:
+          id: f1_strip
+          effect: startup_lightsout
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: f1_strip
+    name: "F1 LED Strip"
+    internal: false
+    pin: 13
+    num_leds: 79
+    chipset: ws2812
+    rgb_order: grb
+
+    effects:
+
+      # ============================================================
+      # ⭐ STARTUP LIGHTS-OUT SEQUENCE
+      # ============================================================
+      - addressable_lambda:
+          name: startup_lightsout
+          update_interval: 50ms   # snelle refresh, timing regelen we zelf
+          lambda: |-
+            static int step = 0;
+            static unsigned long last_change = 0;
+            static int wait_time = 0;
+
+            // Als startup al klaar is → niets meer doen
+            if (id(startup_done)) {
+              return;
+            }
+
+            unsigned long now = millis();
+
+            // Eerste keer: random wachttijd instellen
+            if (wait_time == 0) {
+              wait_time = 1000 + (rand() % 301);  // 1000–1300 ms
+              last_change = now;
+            }
+
+            it.all().fade_to_black(255);
+
+            // 5 blokken van 2 LEDs, met 2 LEDs tussenruimte
+            // Rechts → links
+            const int block_positions[5][2] = {
+              {21, 22},  // blok 1 (rechts)
+              {17, 18},  // blok 2
+              {13, 14},  // blok 3
+              {9, 10},   // blok 4
+              {5, 6}     // blok 5 (links)
+            };
+
+            // Blokken tekenen tot huidige step
+            if (step < 5) {
+              for (int i = 0; i <= step; i++) {
+                int s = block_positions[i][0];
+                int e = block_positions[i][1];
+                it.range(s, e) = Color(255, 0, 0);
+              }
+            }
+
+            // Tijd om naar de volgende stap te gaan?
+            if (now - last_change >= (unsigned long)wait_time) {
+              step++;
+              last_change = now;
+              wait_time = 1000 + (rand() % 301);  // nieuwe random wachttijd
+            }
+
+            // Stap 5 → alles uit
+            if (step == 6) {
+              it.all().fade_to_black(255);
+            }
+
+            // Sequence klaar → effect stoppen + live mode starten
+            if (step > 6) {
+              step = 0;
+              wait_time = 0;
+              id(startup_done) = true;
+
+              // Effect hard stoppen
+              auto off = id(f1_strip).turn_off();
+              off.perform();
+
+              // Daarna live mode starten
+              auto on = id(f1_strip).turn_on();
+              on.set_effect("f1_live");
+              on.perform();
+            }
+
+      # ============================================================
+      # ⭐ AUTOMATISCH EFFECT (MQTT stuurt CLEAR/YELLOW/RED/VSC/SC)
+      # ============================================================
+      - addressable_lambda:
+          name: f1_live
+          update_interval: 180ms
+          lambda: |-
+            it.all().fade_to_black(255);
+
+            if (id(track_state) == "CLEAR") {
+              it.range(0, 23) = Color(0,255,0);
+            }
+
+            else if (id(track_state) == "YELLOW") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
+            }
+
+            else if (id(track_state) == "RED") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
+            }
+
+            else if (id(track_state) == "VSC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,255,0);
+              else
+                it.range(18, 23) = Color(255,255,0);
+            }
+
+            else if (id(track_state) == "SC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,180,0);
+              else
+                it.range(18, 23) = Color(255,180,0);
+            }
+
+            if (id(raceweek_state)) {
+              it.range(23, 79) = Color(255,0,0);
+            }
+
+      # ============================================================
+      # ⭐ HANDMATIGE EFFECTEN
+      # ============================================================
+
+      - addressable_lambda:
+          name: CLEAR
+          update_interval: 200ms
+          lambda: |-
+            it.range(0, 23) = Color(0,255,0);
+
+      - addressable_lambda:
+          name: VSCEND
+          update_interval: 30ms
+          lambda: |-
+            it.range(0, 5) = Color(255,255,0);
+            it.range(18, 23) = Color(255,255,0);
+
+            const float speed = 0.005;
+            float t = millis() * speed;
+            float breath = (sin(t) + 1.0f) / 2.0f;
+            int g = int(255 * breath);
+
+            it.range(6, 17) = Color(0, g, 0);
+
+      - addressable_lambda:
+          name: SCEND
+          update_interval: 30ms
+          lambda: |-
+            it.range(0, 5) = Color(255,180,0);
+            it.range(18, 23) = Color(255,180,0);
+
+            const float speed = 0.005;
+            float t = millis() * speed;
+            float breath = (sin(t) + 1.0f) / 2.0f;
+            int g = int(255 * breath);
+
+            it.range(6, 17) = Color(0, g, 0);
+
+      - addressable_lambda:
+          name: YELLOW
+          update_interval: 180ms
+          lambda: |-
+            static bool on = false;
+            on = !on;
+            it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
+
+      - addressable_lambda:
+          name: RED
+          update_interval: 180ms
+          lambda: |-
+            static bool on = false;
+            on = !on;
+            it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
+
+      - addressable_lambda:
+          name: VSC
+          update_interval: 180ms
+          lambda: |-
+            static bool toggle = false;
+            toggle = !toggle;
+
+            if (toggle) {
+              it.range(0, 5) = Color(255,255,0);
+              it.range(6, 23) = Color(0,0,0);
+            } else {
+              it.range(0, 17) = Color(0,0,0);
+              it.range(18, 23) = Color(255,255,0);
+            }
+
+      - addressable_lambda:
+          name: SC
+          update_interval: 180ms
+          lambda: |-
+            static bool toggle = false;
+            toggle = !toggle;
+
+            if (toggle) {
+              it.range(0, 5) = Color(255,180,0);
+              it.range(6, 23) = Color(0,0,0);
+            } else {
+              it.range(0, 17) = Color(0,0,0);
+              it.range(18, 23) = Color(255,180,0);
+            }
+
+      - addressable_lambda:
+          name: RACEWEEK
+          update_interval: 200ms
+          lambda: |-
+            it.range(23, 79) = Color(255,0,0);
+
