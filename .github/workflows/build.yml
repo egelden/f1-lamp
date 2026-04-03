@@ -24,7 +24,8 @@ jobs:
       - name: Build firmware
         run: |
           mkdir -p build
-          esphome compile ./esphome/f1_led_strip.yaml
+          mkdir -p build
+          esphome compile esphome/f1_led_strip.yaml
           cp .esphome/build/f1_led_strip/.pioenvs/f1_led_strip/firmware.bin build/f1-lamp.bin
 
 
