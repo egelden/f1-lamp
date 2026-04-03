@@ -1,4 +1,4 @@
-esphome: 
+esphome:  
   name: f1_led_strip
 
   on_boot:
