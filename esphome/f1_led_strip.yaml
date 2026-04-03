@@ -23,7 +23,7 @@ ota:
 
 wifi:
   ssid: "DUMMY"
-  password: "DUMMY"
+  password: "12345678"
   reboot_timeout: 0s
 
   ap:
