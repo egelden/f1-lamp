@@ -21,23 +21,46 @@ jobs:
       - name: Install ESPHome
         run: pip install esphome
 
+      - name: Create dummy secrets (for CI only)
+        run: |
+          mkdir -p esphome
+          echo "wifi_ssid: DUMMY_WIFI_1234" > esphome/secrets.yaml
+          echo "wifi_password: DUMMY_PASS_1234" >> esphome/secrets.yaml
+          echo "mqtt_user: dummy" >> esphome/secrets.yaml
+          echo "mqtt_password: dummy" >> esphome/secrets.yaml
+
       - name: Build firmware
         run: |
           mkdir -p build
-          mkdir -p build
           esphome compile esphome/f1_led_strip.yaml
-          cp .esphome/build/f1_led_strip/firmware.bin build/f1-lamp.bin
 
+      - name: Locate firmware file
+        id: find_fw
+        run: |
+          FIRMWARE=$(find .esphome/build -type f -name "*.bin" | head -n 1)
+          echo "Firmware found at: $FIRMWARE"
+          echo "firmware_path=$FIRMWARE" >> $GITHUB_OUTPUT
+
+      - name: Copy firmware to build folder
+        run: |
+          cp "${{ steps.find_fw.outputs.firmware_path }}" build/f1-lamp.bin
 
       - name: Generate version.json
         run: |
           VERSION=$(date +"%Y.%m.%d-%H%M")
-          echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp.bin\" }" > build/version.json
+          echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp.bin\" }" > build/version.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: f1-lamp-firmware
+          path: build/
 
       - name: Commit build artifacts
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add build/
-          git commit -m "Auto-build firmware"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-build firmware"
           git push
