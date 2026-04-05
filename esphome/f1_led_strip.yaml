@@ -1,4 +1,4 @@
-esphome:  
+esphome:
   name: f1_led_strip
 
   on_boot:
@@ -22,8 +22,6 @@ ota:
   platform: esphome
 
 wifi:
-  ssid: "DUMMY"
-  password: "12345678"
   reboot_timeout: 0s
 
   ap:
@@ -342,4 +340,5 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
+          
 
