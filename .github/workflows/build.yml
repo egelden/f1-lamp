@@ -34,6 +34,11 @@ jobs:
           mkdir -p build
           esphome compile esphome/f1_led_strip.yaml
 
+       - name: Debug ESPHome build output
+         run: |
+          echo "=== ESPHome build directory ==="
+          ls -R .esphome/build
+      
       - name: Locate firmware file
         id: find_fw
         run: |
