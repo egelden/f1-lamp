@@ -51,7 +51,7 @@ jobs:
           echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp.bin\" }" > build/version.json
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: f1-lamp-firmware
           path: build/
