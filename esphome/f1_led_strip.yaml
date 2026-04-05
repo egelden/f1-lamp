@@ -1,5 +1,5 @@
 esphome:
-  name: f1_led_strip
+  name: f1_lamp
 
   on_boot:
     priority: -10
@@ -341,4 +341,3 @@ light:
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
           
-
