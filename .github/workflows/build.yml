@@ -21,23 +21,15 @@ jobs:
       - name: Install ESPHome
         run: pip install esphome
 
-      - name: Create dummy secrets (for CI only)
-        run: |
-          mkdir -p esphome
-          echo "wifi_ssid: DUMMY_WIFI_1234" > esphome/secrets.yaml
-          echo "wifi_password: DUMMY_PASS_1234" >> esphome/secrets.yaml
-          echo "mqtt_user: dummy" >> esphome/secrets.yaml
-          echo "mqtt_password: dummy" >> esphome/secrets.yaml
-
       - name: Build firmware
         run: |
           mkdir -p build
           esphome compile esphome/f1_led_strip.yaml
 
-       - name: Debug ESPHome build output
-         run: |
-          echo "=== ESPHome build directory ==="
-          ls -R .esphome/build
+      - name: Debug ESPHome build output
+        run: |
+         echo "=== ESPHome build directory ==="
+         ls -R .esphome/build
       
       - name: Locate firmware file
         id: find_fw
