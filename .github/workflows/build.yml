@@ -34,7 +34,7 @@ jobs:
       - name: Locate firmware file
         id: find_fw
         run: |
-          FIRMWARE=$(find .esphome/build -type f -name "*.bin" | head -n 1)
+          FIRMWARE=$(find esphome/.esphome/build -type f \( -name "*.bin" -o -name "*.ota.bin" -o -name "*.factory.bin" -o -name "program.bin" \) | head -n 1)
           echo "Firmware found at: $FIRMWARE"
           echo "firmware_path=$FIRMWARE" >> $GITHUB_OUTPUT
 
