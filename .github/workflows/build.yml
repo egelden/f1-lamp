@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: write
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,15 +29,24 @@ jobs:
           mkdir -p build
           esphome compile esphome/f1_led_strip.yaml
 
-      - name: Locate firmware file
+      - name: Locate OTA-compatible firmware
         id: find_fw
         run: |
-          FIRMWARE=$(find esphome/.esphome/build -type f \( -name "*.bin" -o -name "*.ota.bin" -o -name "*.factory.bin" -o -name "program.bin" \) | head -n 1)
-          echo "Firmware found at: $FIRMWARE"
+          # Zoek eerst naar OTA firmware
+          FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.ota.bin" | head -n 1)
+
+          # Zo niet, pak dan de normale firmware
           if [ -z "$FIRMWARE" ]; then
-            echo "No firmware file found!"
+            FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.bin" | head -n 1)
+          fi
+
+          echo "Firmware found at: $FIRMWARE"
+
+          if [ -z "$FIRMWARE" ]; then
+            echo "No OTA-compatible firmware found!"
             exit 1
           fi
+
           echo "firmware_path=$FIRMWARE" >> $GITHUB_OUTPUT
 
       - name: Copy firmware to build folder
