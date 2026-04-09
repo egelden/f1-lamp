@@ -27,30 +27,31 @@ jobs:
       - name: Generate version.json and build_info.yaml
         run: |
           VERSION=$(date +"%Y.%m.%d-%H%M")
+
+          # version.json in /build/
+          mkdir -p build
           echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp.bin\" }" > build/version.json
 
-          mkdir -p esphome
+          # build_info.yaml in /esphome/
           echo "substitutions:" > esphome/build_info.yaml
           echo "  firmware_version: \"$VERSION\"" >> esphome/build_info.yaml
 
       - name: Debug build_info.yaml
         run: |
           echo "=== build_info.yaml ==="
+          ls -al esphome
           cat esphome/build_info.yaml || echo "FILE NOT FOUND"
-          
+
       - name: Build firmware
         run: |
-          mkdir -p build
           cd esphome
           esphome compile f1_led_strip.yaml
 
       - name: Locate OTA-compatible firmware
         id: find_fw
         run: |
-          # Zoek eerst naar OTA firmware
           FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.ota.bin" | head -n 1)
 
-          # Zo niet, pak dan de normale firmware
           if [ -z "$FIRMWARE" ]; then
             FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.bin" | head -n 1)
           fi
