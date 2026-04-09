@@ -41,6 +41,12 @@ jobs:
           echo "=== build_info.yaml ==="
           ls -al esphome
           cat esphome/build_info.yaml || echo "FILE NOT FOUND"
+      
+      - name: Debug build_info.yaml (hex)
+        run: |
+          echo "=== HEX DUMP build_info.yaml ==="
+          hexdump -C esphome/build_info.yaml
+      
       - name: Debug repo structure
         run: ls -R .
         
