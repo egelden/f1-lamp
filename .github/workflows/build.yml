@@ -44,8 +44,7 @@ jobs:
 
       - name: Build firmware
         run: |
-          cd esphome
-          esphome compile f1_led_strip.yaml
+          esphome compile esphome/f1_led_strip.yaml
 
       - name: Locate OTA-compatible firmware
         id: find_fw
