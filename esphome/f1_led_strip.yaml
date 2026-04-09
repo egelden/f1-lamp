@@ -13,6 +13,9 @@ esp32:
   framework:
     type: arduino
 
+substitutions:
+  firmware_version: "unknown"
+
 logger:
 
 api:
@@ -107,6 +110,13 @@ text_sensor:
     lambda: |-
       return "<a href=\"/update\"><button style='padding:10px;font-size:16px;'>OTA Update</button></a>";
     update_interval: never
+  - platform: template
+    name: "Firmware Version"
+    id: firmware_version_sensor
+    icon: "mdi:chip"
+    update_interval: never
+    lambda: |-
+      return { "${firmware_version}" };
 
 script:
   - id: try_startup
@@ -341,3 +351,4 @@ light:
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
           
+<<: !include build_info.yaml
