@@ -1,3 +1,8 @@
+<<: !include build_info.yaml
+
+substitutions:
+  firmware_version: "unknown"
+  
 esphome:
   name: f1_lamp
 
@@ -13,8 +18,6 @@ esp32:
   framework:
     type: arduino
 
-substitutions:
-  firmware_version: "unknown"
 
 logger:
 
@@ -351,4 +354,4 @@ light:
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
           
-<<: !include build_info.yaml
+
