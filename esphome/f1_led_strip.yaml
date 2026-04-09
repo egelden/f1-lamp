@@ -1,7 +1,6 @@
 substitutions:
+  <<: !include ./build_info.yaml
   firmware_version: "onbekend"
-
-<<: !include ./build_info.yaml
 
 esphome:
   name: f1_lamp
