@@ -2,7 +2,7 @@
 
 substitutions:
   firmware_version: "unknown"
-  
+
 esphome:
   name: f1_lamp
 
@@ -17,7 +17,6 @@ esp32:
   board: esp32dev
   framework:
     type: arduino
-
 
 logger:
 
@@ -91,7 +90,6 @@ globals:
     initial_value: "false"
     restore_value: false
 
-  # Startup control
   - id: startup_done
     type: bool
     initial_value: "false"
@@ -137,9 +135,6 @@ light:
 
     effects:
 
-      # ============================================================
-      # ⭐ STARTUP LIGHTS-OUT SEQUENCE (RECONNECT-SAFE)
-      # ============================================================
       - addressable_lambda:
           name: startup_lightsout
           update_interval: 50ms
@@ -148,9 +143,6 @@ light:
             static unsigned long last_change = 0;
             static int wait_time = 0;
 
-            // --------------------------------------------------------
-            // Als startup al klaar is → altijd terug naar live mode
-            // --------------------------------------------------------
             if (id(startup_done)) {
               id(f1_strip).turn_on().set_effect("f1_live").perform();
               return;
@@ -158,25 +150,21 @@ light:
 
             unsigned long now = millis();
 
-            // Eerste keer: random wachttijd instellen
             if (wait_time == 0) {
-              wait_time = 1000 + (rand() % 301);  // 1000–1300 ms
+              wait_time = 1000 + (rand() % 301);
               last_change = now;
             }
 
-            // Alles eerst donker maken
             it.all().fade_to_black(255);
 
-            // 5 blokken van 2 LEDs, met 2 LEDs tussenruimte
             const int block_positions[5][2] = {
-              {21, 22},  // blok 1 (rechts)
-              {17, 18},  // blok 2
-              {13, 14},  // blok 3
-              {9, 10},   // blok 4
-              {5, 6}     // blok 5 (links)
+              {21, 22},
+              {17, 18},
+              {13, 14},
+              {9, 10},
+              {5, 6}
             };
 
-            // Blokken tekenen tot huidige step
             if (step < 5) {
               for (int i = 0; i <= step; i++) {
                 int s = block_positions[i][0];
@@ -185,34 +173,26 @@ light:
               }
             }
 
-            // Tijd om naar de volgende stap te gaan?
             if (now - last_change >= (unsigned long)wait_time) {
               step++;
               last_change = now;
               wait_time = 1000 + (rand() % 301);
             }
 
-            // Stap 5 → alles uit
             if (step == 5) {
-             it.all().fade_to_black(255);
+              it.all().fade_to_black(255);
             }
 
-            // Sequence klaar → live mode starten
             if (step > 5) {
               step = 0;
               wait_time = 0;
               id(startup_done) = true;
 
-              // Forceer live mode
               auto on = id(f1_strip).turn_on();
               on.set_effect("f1_live");
               on.perform();
             }
 
-
-      # ============================================================
-      # ⭐ AUTOMATISCH EFFECT (MQTT stuurt CLEAR/YELLOW/RED/VSC/SC)
-      # ============================================================
       - addressable_lambda:
           name: f1_live
           update_interval: 180ms
@@ -222,19 +202,16 @@ light:
             if (id(track_state) == "CLEAR") {
               it.range(0, 23) = Color(0,255,0);
             }
-
             else if (id(track_state) == "YELLOW") {
               static bool on = false;
               on = !on;
               it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
             }
-
             else if (id(track_state) == "RED") {
               static bool on = false;
               on = !on;
               it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
             }
-
             else if (id(track_state) == "VSC") {
               static bool toggle = false;
               toggle = !toggle;
@@ -243,7 +220,6 @@ light:
               else
                 it.range(18, 23) = Color(255,255,0);
             }
-
             else if (id(track_state) == "SC") {
               static bool toggle = false;
               toggle = !toggle;
@@ -256,10 +232,6 @@ light:
             if (id(raceweek_state)) {
               it.range(23, 79) = Color(255,0,0);
             }
-
-      # ============================================================
-      # ⭐ HANDMATIGE EFFECTEN
-      # ============================================================
 
       - addressable_lambda:
           name: CLEAR
@@ -346,5 +318,3 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
-          
-
