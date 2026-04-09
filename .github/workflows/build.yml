@@ -41,7 +41,9 @@ jobs:
           echo "=== build_info.yaml ==="
           ls -al esphome
           cat esphome/build_info.yaml || echo "FILE NOT FOUND"
-
+      - name: Debug repo structure
+        run: ls -R .
+        
       - name: Build firmware
         run: |
           esphome compile esphome/f1_led_strip.yaml
