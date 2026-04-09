@@ -1,5 +1,4 @@
 <<: !include build_info.yaml
-
 substitutions:
   firmware_version: "unknown"
 
