@@ -105,13 +105,13 @@ globals:
 
 text_sensor:
   - platform: template
-    name: "Firmware Version"
-    id: firmware_version_sensor
+    name: "Firmware Version :"
+    #id: firmware_version_sensor
     icon: "mdi:chip"
-    update_interval: never
+    update_interval: 15s
     lambda: |-
       return "${firmware_version}";
-
+            
 script:
   - id: try_startup
     mode: queued
