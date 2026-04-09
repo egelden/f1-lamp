@@ -108,7 +108,7 @@ text_sensor:
     name: "Firmware Version :"
     id: firmware_version_sensor
     icon: "mdi:chip"
-    update_interval: 3600s
+    update_interval: 24h
     lambda: |-
       return "${firmware_version}";
             
