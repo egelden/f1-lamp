@@ -119,7 +119,7 @@ text_sensor:
     icon: "mdi:chip"
     update_interval: never
     lambda: |-
-      return { "${firmware_version}" };
+      return "${firmware_version}";
 
 script:
   - id: try_startup
