@@ -1,5 +1,5 @@
 substitutions:
-  <<: !include ./build_info.yaml
+  <<: !include esphome/build_info.yaml
   firmware_version: "onbekend"
 
 esphome:
