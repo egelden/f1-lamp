@@ -28,8 +28,11 @@ jobs:
         run: |
           VERSION=$(date +"%Y.%m.%d-%H%M")
           echo "{ \"version\": \"$VERSION\", \"url\": \"https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp.bin\" }" > build/version.json
+
           mkdir -p esphome
-          echo "firmware_version: \"$VERSION\"" > esphome/build_info.yaml
+          echo "substitutions:" > esphome/build_info.yaml
+          echo "  firmware_version: \"$VERSION\"" >> esphome/build_info.yaml
+
 
       - name: Build firmware
         run: |
