@@ -33,7 +33,11 @@ jobs:
           echo "substitutions:" > esphome/build_info.yaml
           echo "  firmware_version: \"$VERSION\"" >> esphome/build_info.yaml
 
-
+      - name: Debug build_info.yaml
+        run: |
+          echo "=== build_info.yaml ==="
+          cat esphome/build_info.yaml || echo "FILE NOT FOUND"
+          
       - name: Build firmware
         run: |
           mkdir -p build
