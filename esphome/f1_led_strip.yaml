@@ -132,18 +132,21 @@ light:
     effects:
 
       # ============================================================
-      # ⭐ STARTUP LIGHTS-OUT SEQUENCE
+      # ⭐ STARTUP LIGHTS-OUT SEQUENCE (RECONNECT-SAFE)
       # ============================================================
       - addressable_lambda:
           name: startup_lightsout
-          update_interval: 50ms   # snelle refresh, timing regelen we zelf
+          update_interval: 50ms
           lambda: |-
             static int step = 0;
             static unsigned long last_change = 0;
             static int wait_time = 0;
 
-            // Als startup al klaar is → niets meer doen
+            // --------------------------------------------------------
+            // Als startup al klaar is → altijd terug naar live mode
+            // --------------------------------------------------------
             if (id(startup_done)) {
+              id(f1_strip).turn_on().set_effect("f1_live").perform();
               return;
             }
 
@@ -155,10 +158,10 @@ light:
               last_change = now;
             }
 
+            // Alles eerst donker maken
             it.all().fade_to_black(255);
 
             // 5 blokken van 2 LEDs, met 2 LEDs tussenruimte
-            // Rechts → links
             const int block_positions[5][2] = {
               {21, 22},  // blok 1 (rechts)
               {17, 18},  // blok 2
@@ -180,29 +183,26 @@ light:
             if (now - last_change >= (unsigned long)wait_time) {
               step++;
               last_change = now;
-              wait_time = 1000 + (rand() % 301);  // nieuwe random wachttijd
+              wait_time = 1000 + (rand() % 301);
             }
 
             // Stap 5 → alles uit
-            if (step == 6) {
-              it.all().fade_to_black(255);
+            if (step == 5) {
+             it.all().fade_to_black(255);
             }
 
-            // Sequence klaar → effect stoppen + live mode starten
-            if (step > 6) {
+            // Sequence klaar → live mode starten
+            if (step > 5) {
               step = 0;
               wait_time = 0;
               id(startup_done) = true;
 
-              // Effect hard stoppen
-              auto off = id(f1_strip).turn_off();
-              off.perform();
-
-              // Daarna live mode starten
+              // Forceer live mode
               auto on = id(f1_strip).turn_on();
               on.set_effect("f1_live");
               on.perform();
             }
+
 
       # ============================================================
       # ⭐ AUTOMATISCH EFFECT (MQTT stuurt CLEAR/YELLOW/RED/VSC/SC)
