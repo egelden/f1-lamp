@@ -1,6 +1,6 @@
 <<: !include ./build_info.yaml
 substitutions:
-  firmware_version: "unknown"
+  firmware_version: "onbekend"
 
 esphome:
   name: f1_lamp
@@ -107,9 +107,8 @@ text_sensor:
     name: "Firmware Version :"
     id: firmware_version_sensor
     icon: "mdi:chip"
-    update_interval: 24h
-    lambda: |-
-      return std::string("${firmware_version}");
+    update_interval: never
+    state: "${firmware_version}"
             
 script:
   - id: try_startup
