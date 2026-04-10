@@ -176,7 +176,7 @@ interval:
             ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
           }
       - ota.http_request.flash:
-          url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
+          url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/firmware.ota.bin"
 
 light:
   - platform: esp32_rmt_led_strip
