@@ -100,7 +100,7 @@ jobs:
         run: |
           mosquitto_pub -h gelden.ddns.net -p 2105 -u erwin -P Hyundai521 \
             -t "f1/firmware/latest" \
-            -m "${{ steps.version.outputs.version }}"
+            -m "${{ steps.version.outputs.version }}" \
             -r
       
       - name: Upload build artifacts
