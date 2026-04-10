@@ -202,7 +202,7 @@ script:
 light:
   - platform: esp32_rmt_led_strip
     id: f1_strip
-    name: "F1 LED Strip"
+    name: "F1 Lamp"
     internal: false
     pin: 13
     num_leds: 79
