@@ -189,9 +189,8 @@ interval:
 
           // 4. Check of de firmware al up-to-date is
           if (id(latest_firmware_sensor).state == id(firmware_version_global)) {
-            ESP_LOGI("ota", "Firmware is up-to-date");
             return;
-          }
+          } 
 
           // 5. Nieuwe firmware gedetecteerd → OTA starten
           ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA wordt gestart!");
