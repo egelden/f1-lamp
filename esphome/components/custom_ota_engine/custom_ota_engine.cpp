@@ -11,9 +11,9 @@ void CustomOtaEngine::start_update() {
   updating = true;
   ESP_LOGI("custom_ota", "OTA update gestart vanaf URL: %s", firmware_url.c_str());
 
-  // Hier komt later de echte OTA code
+  // OTA-implementatie komt hier later
 }
 
 void CustomOtaEngine::loop() {
-  // Later gebruiken we dit voor progressie of animatie
+  // Later voor progressie/animatie
 }
