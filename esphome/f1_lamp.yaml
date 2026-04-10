@@ -11,9 +11,9 @@ esphome:
           effect: f1_live
 
 esp32:
-  board: espidf
+  board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
 logger:
 
