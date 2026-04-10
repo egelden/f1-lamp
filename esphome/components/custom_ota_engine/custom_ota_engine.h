@@ -10,6 +10,7 @@ class CustomOtaEngine : public esphome::Component {
     firmware_url = url;
   }
 
-  void start_update();
+  void setup() override;
   void loop() override;
+  void start_update();
 };
