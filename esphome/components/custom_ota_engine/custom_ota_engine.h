@@ -11,6 +11,5 @@ class CustomOtaEngine : public esphome::Component {
   }
 
   void start_update();
-
   void loop() override;
 };
