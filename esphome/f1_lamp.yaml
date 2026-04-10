@@ -2,6 +2,8 @@
 
 esphome:
   name: f1_lamp
+  includes:
+    - custom_ota_engine.h
 
   on_boot:
     priority: -10
@@ -121,6 +123,10 @@ globals:
     initial_value: ""
     restore_value: False
 
+  - id: custom_ota
+    type: CustomOtaEngine*
+    restore_value: no
+
 text_sensor:
   - platform: template
     name: "Installed Firmware Version"
@@ -155,6 +161,15 @@ script:
       - light.turn_on:
           id: f1_strip
           effect: startup_lightsout
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (id(latest_firmware_sensor).state != id(firmware_version_global) &&
+              !id(custom_ota)->updating) {
+            ESP_LOGI("custom_ota", "Nieuwe firmware gedetecteerd — OTA engine starten");
+            id(custom_ota)->start_update();
+          }
 
 light:
   - platform: esp32_rmt_led_strip
@@ -351,3 +366,11 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
+
+custom_component:
+  - lambda: |-
+      auto ota = new CustomOtaEngine();
+      ota->set_url(id(firmware_url));
+      id(custom_ota) = ota;
+      return {ota};
+
