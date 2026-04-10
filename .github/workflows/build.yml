@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install ESPHome
-        run: pip install esphome
+        run: pip install "esphome==2023.12.9"
 
       - name: Generate version.json and build_info.yaml
         id: version
