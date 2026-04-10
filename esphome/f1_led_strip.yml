@@ -1,0 +1,541 @@
+<<: !include build_info.yaml
+
+esphome:
+  name: f1_lamp
+
+  on_boot:
+    priority: -10
+    then:
+      - light.turn_on:
+          id: f1_strip
+          effect: f1_live
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+
+wifi:
+  reboot_timeout: 0s
+
+  ap:
+    ssid: "F1Lamp"
+    password: "12345678"
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(wifi_ok) = true;
+
+captive_portal:
+
+esp32_improv:
+  authorizer: none
+
+web_server:
+  port: 80
+  version: 3
+
+mqtt:
+  broker: gelden.ddns.net
+  port: 2105
+  username: f1reader
+  password: f1reader
+  discovery: false
+  reboot_timeout: 0s
+  keepalive: 15s
+  log_topic: none
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(mqtt_ok) = true;
+      - script.execute: try_startup
+
+  on_message:
+    - topic: f1/f1_track_status/state
+      qos: 0
+      then:
+        - lambda: |-
+            id(track_state) = x.c_str();
+            std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
+
+    - topic: f1/f1_race_week/state
+      qos: 0
+      then:
+        - lambda: |-
+            std::string s = x.c_str();
+            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+            id(raceweek_state) = (s == "ON");
+
+globals:
+  - id: track_state
+    type: std::string
+    initial_value: '"UNAVAILABLE"'
+    restore_value: false
+
+  - id: raceweek_state
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  - id: startup_done
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  - id: wifi_ok
+    type: bool
+    initial_value: "false"
+
+  - id: mqtt_ok
+    type: bool
+    initial_value: "false"
+
+  - id: firmware_version_global
+    type: std::string
+    initial_value: "\"${firmware_version}\""
+
+http_request:
+  useragent: esphome-f1lamp
+  timeout: 10s
+
+text_sensor:
+  - platform: template
+    name: "Installed Firmware Version"
+    id: firmware_version_sensor
+    icon: "mdi:chip"
+    lambda: |-
+      return id(firmware_version_global);
+
+  - platform: template
+    name: "Latest Firmware Version"
+    id: latest_firmware_sensor
+    icon: "mdi:update"
+    update_interval: never
+
+binary_sensor:
+  - platform: template
+    name: "Firmware Update Available"
+    id: update_available
+    device_class: update
+    lambda: |-
+      if (id(latest_firmware_sensor).state.empty()) return false;
+      return id(latest_firmware_sensor).state != id(firmware_version_global);
+    <<: !include build_info.yaml
+
+esphome:
+  name: f1_lamp
+
+  on_boot:
+    priority: -10
+    then:
+      - light.turn_on:
+          id: f1_strip
+          effect: f1_live
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  platform: esphome
+
+wifi:
+  reboot_timeout: 0s
+
+  ap:
+    ssid: "F1Lamp"
+    password: "12345678"
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(wifi_ok) = true;
+
+captive_portal:
+
+esp32_improv:
+  authorizer: none
+
+web_server:
+  port: 80
+  version: 3
+
+mqtt:
+  broker: gelden.ddns.net
+  port: 2105
+  username: f1reader
+  password: f1reader
+  discovery: false
+  reboot_timeout: 0s
+  keepalive: 15s
+  log_topic: none
+
+  on_connect:
+    then:
+      - lambda: |-
+          id(mqtt_ok) = true;
+      - script.execute: try_startup
+
+  on_message:
+    - topic: f1/f1_track_status/state
+      qos: 0
+      then:
+        - lambda: |-
+            id(track_state) = x.c_str();
+            std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
+
+    - topic: f1/f1_race_week/state
+      qos: 0
+      then:
+        - lambda: |-
+            std::string s = x.c_str();
+            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+            id(raceweek_state) = (s == "ON");
+
+globals:
+  - id: track_state
+    type: std::string
+    initial_value: '"UNAVAILABLE"'
+    restore_value: false
+
+  - id: raceweek_state
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  - id: startup_done
+    type: bool
+    initial_value: "false"
+    restore_value: false
+
+  - id: wifi_ok
+    type: bool
+    initial_value: "false"
+
+  - id: mqtt_ok
+    type: bool
+    initial_value: "false"
+
+  - id: firmware_version_global
+    type: std::string
+    initial_value: "\"${firmware_version}\""
+
+http_request:
+  useragent: esphome-f1lamp
+  timeout: 10s
+
+text_sensor:
+  - platform: template
+    name: "Installed Firmware Version"
+    id: firmware_version_sensor
+    icon: "mdi:chip"
+    lambda: |-
+      return id(firmware_version_global);
+    update_interval: 1h
+
+  - platform: template
+    name: "Latest Firmware Version"
+    id: latest_firmware_sensor
+    icon: "mdi:update"
+    update_interval: 1h
+
+binary_sensor:
+  - platform: template
+    name: "Firmware Update Available"
+    id: update_available
+    device_class: update
+    lambda: |-
+      if (id(latest_firmware_sensor).state.empty()) return false;
+      return id(latest_firmware_sensor).state != id(firmware_version_global);
+    
+
+interval:
+  - interval: 12h
+    then:
+      - http_request.get:
+          url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/version.json
+          on_response:
+            then:
+              - lambda: |-
+                  if (!x.containsKey("version")) {
+                    ESP_LOGW("ota", "JSON bevat geen 'version' veld!");
+                    return;
+                  }
+                  std::string latest = x["version"].as<std::string>();
+                  id(latest_firmware_sensor).publish_state(latest);
+                  ESP_LOGI("ota", "Latest firmware version: %s", latest.c_str());
+
+script:
+  - id: try_startup
+    mode: queued
+    then:
+      - lambda: |-
+          if (id(startup_done)) return;
+          if (!id(wifi_ok) || !id(mqtt_ok)) return;
+      - light.turn_on:
+          id: f1_strip
+          effect: startup_lightsout
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: f1_strip
+    name: "F1 LED Strip"
+    internal: false
+    pin: 13
+    num_leds: 79
+    chipset: ws2812
+    rgb_order: grb
+
+    effects:
+
+      - addressable_lambda:
+          name: startup_lightsout
+          update_interval: 50ms
+          lambda: |-
+            static int step = 0;
+            static unsigned long last_change = 0;
+            static int wait_time = 0;
+
+            if (id(startup_done)) {
+              id(f1_strip).turn_on().set_effect("f1_live").perform();
+              return;
+            }
+
+            unsigned long now = millis();
+
+            if (wait_time == 0) {
+              wait_time = 1000 + (rand() % 301);
+              last_change = now;
+            }
+
+            it.all().fade_to_black(255);
+
+            const int block_positions[5][2] = {
+              {21, 22},
+              {17, 18},
+              {13, 14},
+              {9, 10},
+              {5, 6}
+            };
+
+            if (step < 5) {
+              for (int i = 0; i <= step; i++) {
+                int s = block_positions[i][0];
+                int e = block_positions[i][1];
+                it.range(s, e) = Color(255, 0, 0);
+              }
+            }
+
+            if (now - last_change >= (unsigned long)wait_time) {
+              step++;
+              last_change = now;
+              wait_time = 1000 + (rand() % 301);
+            }
+
+            if (step == 5) {
+              it.all().fade_to_black(255);
+            }
+
+            if (step > 5) {
+              step = 0;
+              wait_time = 0;
+              id(startup_done) = true;
+
+              auto on = id(f1_strip).turn_on();
+              on.set_effect("f1_live");
+              on.perform();
+            }
+
+      - addressable_lambda:
+          name: f1_live
+          update_interval: 180ms
+          lambda: |-
+            it.all().fade_to_black(255);
+
+            if (id(track_state) == "CLEAR") {
+              it.range(0, 23) = Color(0,255,0);
+            }
+            else if (id(track_state) == "YELLOW") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
+            }
+            else if (id(track_state) == "RED") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
+            }
+            else if (id(track_state) == "VSC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,255,0);
+              else
+                it.range(18, 23) = Color(255,255,0);
+            }
+            else if (id(track_state) == "SC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,180,0);
+              else
+                it.range(18, 23) = Color(255,180,0);
+            }
+
+            if (id(raceweek_state)) {
+              it.range(23, 79) = Color(255,0,0);
+            }
+
+
+interval:
+  - interval: 12h
+    then:
+      - http_request.get:
+          url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/version.json
+          on_response:
+            then:
+              - lambda: |-
+                  if (!x.containsKey("version")) {
+                    ESP_LOGW("ota", "JSON bevat geen 'version' veld!");
+                    return;
+                  }
+                  std::string latest = x["version"].as<std::string>();
+                  id(latest_firmware_sensor).publish_state(latest);
+                  ESP_LOGI("ota", "Latest firmware version: %s", latest.c_str());
+
+script:
+  - id: try_startup
+    mode: queued
+    then:
+      - lambda: |-
+          if (id(startup_done)) return;
+          if (!id(wifi_ok) || !id(mqtt_ok)) return;
+      - light.turn_on:
+          id: f1_strip
+          effect: startup_lightsout
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: f1_strip
+    name: "F1 LED Strip"
+    internal: false
+    pin: 13
+    num_leds: 79
+    chipset: ws2812
+    rgb_order: grb
+
+    effects:
+
+      - addressable_lambda:
+          name: startup_lightsout
+          update_interval: 50ms
+          lambda: |-
+            static int step = 0;
+            static unsigned long last_change = 0;
+            static int wait_time = 0;
+
+            if (id(startup_done)) {
+              id(f1_strip).turn_on().set_effect("f1_live").perform();
+              return;
+            }
+
+            unsigned long now = millis();
+
+            if (wait_time == 0) {
+              wait_time = 1000 + (rand() % 301);
+              last_change = now;
+            }
+
+            it.all().fade_to_black(255);
+
+            const int block_positions[5][2] = {
+              {21, 22},
+              {17, 18},
+              {13, 14},
+              {9, 10},
+              {5, 6}
+            };
+
+            if (step < 5) {
+              for (int i = 0; i <= step; i++) {
+                int s = block_positions[i][0];
+                int e = block_positions[i][1];
+                it.range(s, e) = Color(255, 0, 0);
+              }
+            }
+
+            if (now - last_change >= (unsigned long)wait_time) {
+              step++;
+              last_change = now;
+              wait_time = 1000 + (rand() % 301);
+            }
+
+            if (step == 5) {
+              it.all().fade_to_black(255);
+            }
+
+            if (step > 5) {
+              step = 0;
+              wait_time = 0;
+              id(startup_done) = true;
+
+              auto on = id(f1_strip).turn_on();
+              on.set_effect("f1_live");
+              on.perform();
+            }
+
+      - addressable_lambda:
+          name: f1_live
+          update_interval: 180ms
+          lambda: |-
+            it.all().fade_to_black(255);
+
+            if (id(track_state) == "CLEAR") {
+              it.range(0, 23) = Color(0,255,0);
+            }
+            else if (id(track_state) == "YELLOW") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
+            }
+            else if (id(track_state) == "RED") {
+              static bool on = false;
+              on = !on;
+              it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
+            }
+            else if (id(track_state) == "VSC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,255,0);
+              else
+                it.range(18, 23) = Color(255,255,0);
+            }
+            else if (id(track_state) == "SC") {
+              static bool toggle = false;
+              toggle = !toggle;
+              if (toggle)
+                it.range(0, 5) = Color(255,180,0);
+              else
+                it.range(18, 23) = Color(255,180,0);
+            }
+
+            if (id(raceweek_state)) {
+              it.range(23, 79) = Color(255,0,0);
+            }
