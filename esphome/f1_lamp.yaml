@@ -88,6 +88,7 @@ mqtt:
       then:
         - lambda: |-
             id(firmware_url) = x.c_str();
+            id(custom_ota)->set_url(id(firmware_url));
             ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
 
 globals:
@@ -373,9 +374,6 @@ external_components:
 
 custom_ota_engine:
 
-lambda: |-
-  id(custom_ota) = new CustomOtaEngine();
-  id(custom_ota)->set_url(id(firmware_url));
-  App.register_component(id(custom_ota));
-
-
+components:
+  - id: custom_ota
+    type: CustomOtaEngine
