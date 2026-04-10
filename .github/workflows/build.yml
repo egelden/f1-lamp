@@ -25,6 +25,7 @@ jobs:
         run: pip install esphome
 
       - name: Generate version.json and build_info.yaml
+        id: version
         run: |
           VERSION=$(date +"%Y.%m.%d-%H%M")
 
@@ -35,6 +36,9 @@ jobs:
           # build_info.yaml in /esphome/
           echo "substitutions:" > esphome/build_info.yaml
           echo "  firmware_version: \"$VERSION\"" >> esphome/build_info.yaml
+
+          # expose VERSION to other steps
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Debug build_info.yaml
         run: |
