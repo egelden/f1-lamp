@@ -127,14 +127,6 @@ globals:
     type: CustomOtaEngine*
     restore_value: no
 
-on_boot:
-  priority: -100
-  then:
-    - lambda: |-
-        id(custom_ota) = new CustomOtaEngine();
-        id(custom_ota)->set_url(id(firmware_url));
-        App.register_component(id(custom_ota));
-
 text_sensor:
   - platform: template
     name: "Installed Firmware Version"
@@ -380,5 +372,10 @@ external_components:
   - source: components
 
 custom_ota_engine:
+
+lambda: |-
+  id(custom_ota) = new CustomOtaEngine();
+  id(custom_ota)->set_url(id(firmware_url));
+  App.register_component(id(custom_ota));
 
 
