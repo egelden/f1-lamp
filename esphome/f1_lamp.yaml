@@ -21,7 +21,7 @@ api:
   reboot_timeout: 0s
 
 ota:
-  platform: esphome
+  - platform: http_request
 
 wifi:
   reboot_timeout: 0s
@@ -194,9 +194,9 @@ script:
   
   - id: auto_update
     then:
-      - lambda: |-
-          id(updating) = true;
-          ESP_LOGI("ota", "Starting automatic OTA update from: %s", id(firmware_url).c_str());
+    - ota.http_request.flash:
+        url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin
+    - logger.log: "This message should be not displayed because the device reboots"
       
 
 light:
