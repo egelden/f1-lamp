@@ -159,25 +159,32 @@ script:
           id: f1_strip
           effect: startup_lightsout
 
-#interval:
-#  - interval: 10s
-#    then:
-#      - lambda: |-
-#          if (id(latest_firmware_sensor).state != id(firmware_version_global)) {
-#            ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
-#            id(http_ota).start();
-#          }
-
 interval:
   - interval: 10s
     then:
       - lambda: |-
-          if (id(latest_firmware_sensor).state != id(firmware_version_global)) {
-            ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
+          // 1. Wacht tot WiFi en MQTT verbonden zijn
+          if (!id(wifi_ok) || !id(mqtt_ok)) {
+            ESP_LOGI("ota", "Wachten op WiFi/MQTT...");
+            return;
           }
+
+          // 2. Wacht tot latest_firmware_sensor een waarde heeft
+          if (id(latest_firmware_sensor).state.empty()) {
+            ESP_LOGI("ota", "Nog geen firmware info ontvangen...");
+            return;
+          }
+
+          // 3. Check of er een update is
+          if (id(latest_firmware_sensor).state == id(firmware_version_global)) {
+            ESP_LOGI("ota", "Firmware is up-to-date");
+            return;
+          }
+
+          ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA starten!");
       - ota.http_request.flash:
-          md5_url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5
-          url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin
+          url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
+          md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
 
 light:
   - platform: esp32_rmt_led_strip
