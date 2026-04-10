@@ -22,8 +22,6 @@ api:
 
 ota:
   - platform: http_request
-    id: http_ota
-    url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin
 
 wifi:
   reboot_timeout: 0s
@@ -160,14 +158,14 @@ script:
           id: f1_strip
           effect: startup_lightsout
 
-interval:
-  - interval: 10s
-    then:
-      - lambda: |-
-          if (id(latest_firmware_sensor).state != id(firmware_version_global)) {
-            ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
-            id(http_ota).start();
-          }
+#interval:
+#  - interval: 10s
+#    then:
+#      - lambda: |-
+#          if (id(latest_firmware_sensor).state != id(firmware_version_global)) {
+#            ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
+#            id(http_ota).start();
+#          }
 
 light:
   - platform: esp32_rmt_led_strip
