@@ -93,6 +93,14 @@ jobs:
 
           echo "Created:"
           ls -al build
+      
+      - name: Generate MD5 checksum
+        run: |
+          cd build
+          md5sum f1-lamp-OTA.bin > f1-lamp-OTA.bin.md5
+          echo "Generated MD5:"
+          cat f1-lamp-OTA.bin.md5
+      
       - name: Install mosquitto clients
         run: sudo apt-get update && sudo apt-get install -y mosquitto-clients
   
