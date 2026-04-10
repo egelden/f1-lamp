@@ -11,7 +11,7 @@ esphome:
           effect: f1_live
 
 esp32:
-  board: esp32dev
+  board: espidf
   framework:
     type: arduino
 
