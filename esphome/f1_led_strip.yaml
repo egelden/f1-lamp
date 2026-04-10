@@ -1,3 +1,6 @@
+substitutions:
+    firmware_version: "onbekend"
+
 <<: !include build_info.yaml
    
 esphome:
