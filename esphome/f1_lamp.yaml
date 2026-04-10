@@ -1,5 +1,8 @@
 <<: !include build_info.yaml
 
+external_components:
+  - source: components
+
 esphome:
   name: f1_lamp
   includes:
@@ -127,11 +130,13 @@ globals:
     type: CustomOtaEngine*
     restore_value: no
 
-init:
-  - lambda: |-
-      id(custom_ota) = new CustomOtaEngine();
-      id(custom_ota)->set_url(id(firmware_url));
-      App.register_component(id(custom_ota));
+on_boot:
+  priority: -100
+  then:
+    - lambda: |-
+        id(custom_ota) = new CustomOtaEngine();
+        id(custom_ota)->set_url(id(firmware_url));
+        App.register_component(id(custom_ota));
 
 text_sensor:
   - platform: template
