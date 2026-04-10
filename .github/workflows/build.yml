@@ -89,7 +89,9 @@ jobs:
 
           echo "Created:"
           ls -al build
-
+      - name: Install mosquitto clients
+        run: sudo apt-get update && sudo apt-get install -y mosquitto-clients
+  
       - name: Publish latest version to MQTT
         run: |
           mosquitto_pub -h gelden.ddns.net -p 2105 -u erwin -P Hyundai521 \
