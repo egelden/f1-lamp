@@ -38,6 +38,14 @@ wifi:
 
 captive_portal:
 
+script:
+  - id: do_ota
+    then:
+      - logger.log: "OTA gestart via HTTP..."
+      - ota.http_request.flash:
+          url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
+          md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
+
 esp32_improv:
   authorizer: none
 
@@ -163,28 +171,34 @@ interval:
   - interval: 10s
     then:
       - lambda: |-
-          // 1. Wacht tot WiFi en MQTT verbonden zijn
-          if (!id(wifi_ok) || !id(mqtt_ok)) {
-            ESP_LOGI("ota", "Wachten op WiFi/MQTT...");
+          // 1. Wacht tot WiFi verbonden is
+          if (!id(wifi_ok)) {
+            ESP_LOGI("ota", "Wachten op WiFi...");
             return;
           }
 
-          // 2. Wacht tot latest_firmware_sensor een waarde heeft
+          // 2. Wacht tot MQTT verbonden is
+          if (!id(mqtt_ok)) {
+            ESP_LOGI("ota", "Wachten op MQTT...");
+            return;
+          }
+
+          // 3. Wacht tot latest_firmware_sensor een waarde heeft
           if (id(latest_firmware_sensor).state.empty()) {
             ESP_LOGI("ota", "Nog geen firmware info ontvangen...");
             return;
           }
 
-          // 3. Check of er een update is
+          // 4. Check of de firmware al up-to-date is
           if (id(latest_firmware_sensor).state == id(firmware_version_global)) {
             ESP_LOGI("ota", "Firmware is up-to-date");
             return;
           }
 
-          ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA starten!");
-      - ota.http_request.flash:
-          url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
-          md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
+          // 5. Nieuwe firmware gedetecteerd → OTA starten
+          ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA wordt gestart!");
+          id(do_ota).execute();
+
 
 light:
   - platform: esp32_rmt_led_strip
