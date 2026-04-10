@@ -21,7 +21,11 @@ api:
   reboot_timeout: 0s
 
 ota:
-  platform: esphome
+  platform: http_request
+  id: http_ota
+  url: !lambda |-
+    return id(firmware_url).c_str();
+  timeout: 120s
 
 wifi:
   reboot_timeout: 0s
@@ -87,8 +91,6 @@ mqtt:
         - lambda: |-
             id(firmware_url) = x.c_str();
             ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
-
-
 
 globals:
   - id: track_state
@@ -157,6 +159,15 @@ script:
       - light.turn_on:
           id: f1_strip
           effect: startup_lightsout
+
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (id(latest_firmware_sensor).state != id(firmware_version_global)) {
+            ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — HTTP OTA starten");
+            id(http_ota).start();
+          }
 
 light:
   - platform: esp32_rmt_led_strip
