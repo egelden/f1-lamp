@@ -3,7 +3,7 @@
 esphome:
   name: f1_lamp
   includes:
-    - custom_ota_engine.h
+    - components/custom_ota_engine/custom_ota_engine.h
 
   on_boot:
     priority: -10
@@ -127,6 +127,12 @@ globals:
     type: CustomOtaEngine*
     restore_value: no
 
+init:
+  - lambda: |-
+      id(custom_ota) = new CustomOtaEngine();
+      id(custom_ota)->set_url(id(firmware_url));
+      App.register_component(id(custom_ota));
+
 text_sensor:
   - platform: template
     name: "Installed Firmware Version"
@@ -161,6 +167,7 @@ script:
       - light.turn_on:
           id: f1_strip
           effect: startup_lightsout
+
 interval:
   - interval: 10s
     then:
@@ -367,10 +374,9 @@ light:
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
 
-custom_component:
-  - lambda: |-
-      auto ota = new CustomOtaEngine();
-      ota->set_url(id(firmware_url));
-      id(custom_ota) = ota;
-      return {ota};
+external_components:
+  - source: components
+
+custom_ota_engine:
+
 
