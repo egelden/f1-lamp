@@ -98,6 +98,8 @@ mqtt:
             id(firmware_url) = x.c_str();
             ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
 
+# test comment 
+
 globals:
   - id: track_state
     type: std::string
