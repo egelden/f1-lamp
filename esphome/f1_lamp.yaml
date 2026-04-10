@@ -1,8 +1,5 @@
 <<: !include build_info.yaml
 
-external_components:
-  - source: components
-
 esphome:
   name: f1_lamp
   includes:
