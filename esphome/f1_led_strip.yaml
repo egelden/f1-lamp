@@ -81,6 +81,22 @@ mqtt:
       then:
         - lambda: |-
             id(latest_firmware_sensor).publish_state(x.c_str());
+    
+    - topic: f1/firmware/latest
+      then:
+        - lambda: |-
+            id(latest_firmware_sensor).publish_state(x.c_str());
+            if (x != id(firmware_version_global)) {
+              ESP_LOGI("ota", "New firmware detected (%s), current is %s. Scheduling auto-update.",
+                       x.c_str(), id(firmware_version_global).c_str());
+              id(auto_update_needed) = true;
+            }
+
+    - topic: f1/firmware/url
+      then:
+        - lambda: |-
+            id(firmware_url) = x.c_str();
+            ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
 
 globals:
   - id: track_state
@@ -109,6 +125,21 @@ globals:
   - id: firmware_version_global
     type: std::string
     initial_value: "\"${firmware_version}\""
+  
+  - id: firmware_url
+    type: std::string
+    initial_value: ""
+    restore_value: False
+  
+  - id: updating
+    type: bool
+    initial_value: "false"
+    restore_value: False
+  
+  - id: auto_update_needed
+    type: bool
+    initial_value: "false"
+    restore_value: False
 
 
 text_sensor:
@@ -135,6 +166,20 @@ binary_sensor:
       if (id(latest_firmware_sensor).state.empty()) return false;
       return id(latest_firmware_sensor).state != id(firmware_version_global);
 
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (id(auto_update_needed) && !id(firmware_url).empty()) {
+            ESP_LOGI("ota", "Triggering Home Assistant OTA update...");
+            id(updating) = true;
+          } else {
+            return;
+          }
+      - homeassistant.service:
+          service: esphome.f1_lamp_update_firmware
+      - lambda: |-
+          id(auto_update_needed) = false;
 
 script:
   - id: try_startup
@@ -146,6 +191,13 @@ script:
       - light.turn_on:
           id: f1_strip
           effect: startup_lightsout
+  
+  - id: auto_update
+    then:
+      - lambda: |-
+          id(updating) = true;
+          ESP_LOGI("ota", "Starting automatic OTA update from: %s", id(firmware_url).c_str());
+      
 
 light:
   - platform: esp32_rmt_led_strip
