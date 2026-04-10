@@ -90,7 +90,12 @@ jobs:
           echo "Created:"
           ls -al build
 
-
+      - name: Publish latest version to MQTT
+        run: |
+          mosquitto_pub -h gelden.ddns.net -p 2105 -u erwin -P Hyundai521 \
+            -t "f1/firmware/latest" \
+            -m "${{ steps.version.outputs.version }}"
+      
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
