@@ -2,8 +2,6 @@
 
 esphome:
   name: f1_lamp
-  includes:
-    - components/custom_ota_engine/custom_ota_engine.h
 
   on_boot:
     priority: -10
@@ -83,7 +81,25 @@ mqtt:
       then:
         - lambda: |-
             id(latest_firmware_sensor).publish_state(x.c_str());
-        
+    
+    - topic: f1/firmware/latest
+      then:
+        - lambda: |-
+            id(latest_firmware_sensor).publish_state(x.c_str());
+            if (x != id(firmware_version_global)) {
+              ESP_LOGI("ota", "New firmware detected (%s), current is %s. Scheduling auto-update.",
+                       x.c_str(), id(firmware_version_global).c_str());
+              id(auto_update_needed) = true;
+            }
+
+    - topic: f1/firmware/url
+      then:
+        - lambda: |-
+            id(firmware_url) = x.c_str();
+            ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
+
+
+
 globals:
   - id: track_state
     type: std::string
@@ -116,7 +132,7 @@ globals:
     type: std::string
     initial_value: ""
     restore_value: False
-  
+
 text_sensor:
   - platform: template
     name: "Installed Firmware Version"
@@ -155,7 +171,7 @@ script:
 light:
   - platform: esp32_rmt_led_strip
     id: f1_strip
-    name: "F1 Lamp"
+    name: "F1 LED Strip"
     internal: false
     pin: 13
     num_leds: 79
@@ -347,8 +363,3 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
-
-external_components:
-  - source: components
-
-
