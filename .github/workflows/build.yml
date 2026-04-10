@@ -56,7 +56,7 @@ jobs:
         
       - name: Build firmware
         run: |
-          esphome compile esphome/f1_led_strip.yaml
+          esphome compile esphome/f1_lamp.yaml
 
       - name: Locate firmware files
         id: find_fw
