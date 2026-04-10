@@ -23,7 +23,7 @@ api:
 ota:
   - platform: http_request
     id: http_ota
-    url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
+    url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin
 
 wifi:
   reboot_timeout: 0s
