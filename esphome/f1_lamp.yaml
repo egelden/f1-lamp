@@ -82,7 +82,7 @@ mqtt:
         - lambda: |-
             id(latest_firmware_sensor).publish_state(x.c_str());
     
-        - topic: f1/firmware/url
+    - topic: f1/firmware/url
       then:
         - lambda: |-
             id(firmware_url) = x.c_str();
