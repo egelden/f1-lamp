@@ -23,8 +23,7 @@ api:
 ota:
   platform: http_request
   id: http_ota
-  url: !lambda |-
-    return id(firmware_url).c_str();
+  url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
   timeout: 120s
 
 wifi:
