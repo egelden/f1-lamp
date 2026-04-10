@@ -1,5 +1,5 @@
 <<: !include build_info.yaml
-
+   
 esphome:
   name: f1_lamp
 
@@ -99,74 +99,20 @@ globals:
   - id: mqtt_ok
     type: bool
     initial_value: "false"
-
+  
   - id: firmware_version_global
     type: std::string
     initial_value: "\"${firmware_version}\""
-
-# ---------------------------------------------------------
-# ⭐ HTTP CLIENT VOOR ONLINE VERSION CHECK
-# ---------------------------------------------------------
-http_request:
-  useragent: esphome-f1lamp
-  timeout: 10s
-
-# ---------------------------------------------------------
-# ⭐ TEXT SENSORS
-# ---------------------------------------------------------
+    
 text_sensor:
-  # Installed version
   - platform: template
-    name: "Installed Firmware Version"
+    name: "Installed Firmware Version :"
     id: firmware_version_sensor
     icon: "mdi:chip"
+    update_interval: 24h
     lambda: |-
       return id(firmware_version_global);
-    update_interval: 3600s
-
-  # Latest version (wordt via interval + http_request gezet)
-  - platform: template
-    name: "Latest Firmware Version"
-    id: latest_firmware_sensor
-    icon: "mdi:update"
-    update_interval: 3600s
-
-# ---------------------------------------------------------
-# ⭐ UPDATE AVAILABLE SENSOR
-# ---------------------------------------------------------
-binary_sensor:
-  - platform: template
-    name: "Firmware Update Available"
-    id: update_available
-    device_class: update
-    lambda: |-
-      if (id(latest_firmware_sensor).state.empty()) return false;
-      return id(latest_firmware_sensor).state != id(firmware_version_global);
-    #update_interval: 1h
-
-# ---------------------------------------------------------
-# ⭐ INTERVAL: OPHALEN VAN ONLINE VERSION.JSON
-# ---------------------------------------------------------
-interval:
-  - interval: 12h
-    then:
-      - http_request.get:
-          url: https://raw.githubusercontent.com/egelden/f1-lamp/main/build/version.json
-          on_response:
-            then:
-              - lambda: |-
-                  if (!x.containsKey("version")) {
-                    ESP_LOGW("ota", "JSON bevat geen 'version' veld!");
-                    return;
-                  }
-                  std::string latest = x["version"].as<std::string>();
-                  id(latest_firmware_sensor).publish_state(latest);
-                  ESP_LOGI("ota", "Latest firmware version: %s", latest.c_str());
-
-# ---------------------------------------------------------
-# ⭐ REST VAN JOUW YAML (ONAANGERAAT)
-# ---------------------------------------------------------
-
+            
 script:
   - id: try_startup
     mode: queued
@@ -189,8 +135,6 @@ light:
     rgb_order: grb
 
     effects:
-      # (al jouw bestaande effecten hier)
-
 
       - addressable_lambda:
           name: startup_lightsout
