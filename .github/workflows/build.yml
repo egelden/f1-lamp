@@ -54,27 +54,42 @@ jobs:
         run: |
           esphome compile esphome/f1_led_strip.yaml
 
-      - name: Locate OTA-compatible firmware
+      - name: Locate firmware files
         id: find_fw
         run: |
-          FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.ota.bin" | head -n 1)
+          OTA=$(find esphome/.esphome/build -type f -name "firmware.ota.bin" | head -n 1)
+          FACTORY=$(find esphome/.esphome/build -type f -name "firmware.factory.bin" | head -n 1)
 
-          if [ -z "$FIRMWARE" ]; then
-            FIRMWARE=$(find esphome/.esphome/build -type f -name "firmware.bin" | head -n 1)
+          # Fallback voor OTA (sommige ESPHome-versies maken alleen firmware.bin)
+          if [ -z "$OTA" ]; then
+            OTA=$(find esphome/.esphome/build -type f -name "firmware.bin" | head -n 1)
           fi
 
-          echo "Firmware found at: $FIRMWARE"
+          echo "OTA firmware: $OTA"
+          echo "Factory firmware: $FACTORY"
 
-          if [ -z "$FIRMWARE" ]; then
-            echo "No OTA-compatible firmware found!"
+          if [ -z "$OTA" ]; then
+            echo "ERROR: No OTA firmware found!"
             exit 1
           fi
 
-          echo "firmware_path=$FIRMWARE" >> $GITHUB_OUTPUT
+          if [ -z "$FACTORY" ]; then
+            echo "ERROR: No FACTORY firmware found!"
+            exit 1
+          fi
+
+          echo "ota_path=$OTA" >> $GITHUB_OUTPUT
+          echo "factory_path=$FACTORY" >> $GITHUB_OUTPUT
 
       - name: Copy firmware to build folder
         run: |
-          cp "${{ steps.find_fw.outputs.firmware_path }}" build/f1-lamp-OTA.bin
+          mkdir -p build
+          cp "${{ steps.find_fw.outputs.ota_path }}" build/f1-lamp-OTA.bin
+          cp "${{ steps.find_fw.outputs.factory_path }}" build/f1-lamp-FACTORY.bin
+
+          echo "Created:"
+          ls -al build
+
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
