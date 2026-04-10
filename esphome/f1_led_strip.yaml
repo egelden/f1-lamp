@@ -1,7 +1,5 @@
-substitutions:
-  <<: !include build_info.yaml
-  firmware_version: "2026-04-10-0001"
-    
+<<: !include build_info.yaml
+   
 esphome:
   name: f1_lamp
 
