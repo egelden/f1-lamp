@@ -47,6 +47,8 @@ web_server:
   port: 80
   version: 3
 
+http_request:
+
 mqtt:
   broker: gelden.ddns.net
   port: 2105
