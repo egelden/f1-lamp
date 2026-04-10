@@ -77,6 +77,7 @@ mqtt:
             id(raceweek_state) = (s == "ON");
 
     - topic: f1/firmware/latest
+      qos: 0
       then:
         - lambda: |-
             id(latest_firmware_sensor).publish_state(x.c_str());
