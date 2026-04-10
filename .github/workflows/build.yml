@@ -98,7 +98,9 @@ jobs:
   
       - name: Publish latest version to MQTT
         run: |
-          mosquitto_pub -h gelden.ddns.net -p 2105 -u erwin -P Hyundai521 \
+          mosquitto_pub -h gelden.ddns.net -p 2105 \
+            -u "${{ secrets.MQTT_USER }}" \
+            -P "${{ secrets.MQTT_PASS }}" \
             -t "f1/firmware/latest" \
             -m "${{ steps.version.outputs.version }}" \
             -r
