@@ -1,5 +1,5 @@
 <<: !include build_info.yaml
-   
+
 esphome:
   name: f1_lamp
 
@@ -76,6 +76,11 @@ mqtt:
             std::transform(s.begin(), s.end(), s.begin(), ::toupper);
             id(raceweek_state) = (s == "ON");
 
+    - topic: f1/firmware/latest
+      then:
+        - lambda: |-
+            id(latest_firmware_sensor).publish_state(x.c_str());
+
 globals:
   - id: track_state
     type: std::string
@@ -99,20 +104,37 @@ globals:
   - id: mqtt_ok
     type: bool
     initial_value: "false"
-  
+
   - id: firmware_version_global
     type: std::string
     initial_value: "\"${firmware_version}\""
-    
+
+
 text_sensor:
   - platform: template
-    name: "Installed Firmware Version :"
+    name: "Installed Firmware Version"
     id: firmware_version_sensor
     icon: "mdi:chip"
-    update_interval: 24h
     lambda: |-
       return id(firmware_version_global);
-            
+    update_interval: 1h
+
+  - platform: template
+    name: "Latest Firmware Version"
+    id: latest_firmware_sensor
+    icon: "mdi:update"
+    update_interval: 5s
+
+binary_sensor:
+  - platform: template
+    name: "Firmware Update Available"
+    id: update_available
+    device_class: update
+    lambda: |-
+      if (id(latest_firmware_sensor).state.empty()) return false;
+      return id(latest_firmware_sensor).state != id(firmware_version_global);
+
+
 script:
   - id: try_startup
     mode: queued
@@ -233,89 +255,3 @@ light:
             if (id(raceweek_state)) {
               it.range(23, 79) = Color(255,0,0);
             }
-
-      - addressable_lambda:
-          name: CLEAR
-          update_interval: 200ms
-          lambda: |-
-            it.range(0, 23) = Color(0,255,0);
-
-      - addressable_lambda:
-          name: VSCEND
-          update_interval: 30ms
-          lambda: |-
-            it.range(0, 5) = Color(255,255,0);
-            it.range(18, 23) = Color(255,255,0);
-
-            const float speed = 0.005;
-            float t = millis() * speed;
-            float breath = (sin(t) + 1.0f) / 2.0f;
-            int g = int(255 * breath);
-
-            it.range(6, 17) = Color(0, g, 0);
-
-      - addressable_lambda:
-          name: SCEND
-          update_interval: 30ms
-          lambda: |-
-            it.range(0, 5) = Color(255,180,0);
-            it.range(18, 23) = Color(255,180,0);
-
-            const float speed = 0.005;
-            float t = millis() * speed;
-            float breath = (sin(t) + 1.0f) / 2.0f;
-            int g = int(255 * breath);
-
-            it.range(6, 17) = Color(0, g, 0);
-
-      - addressable_lambda:
-          name: YELLOW
-          update_interval: 180ms
-          lambda: |-
-            static bool on = false;
-            on = !on;
-            it.range(0, 23) = on ? Color(255,200,0) : Color(0,0,0);
-
-      - addressable_lambda:
-          name: RED
-          update_interval: 180ms
-          lambda: |-
-            static bool on = false;
-            on = !on;
-            it.range(0, 23) = on ? Color(255,0,0) : Color(0,0,0);
-
-      - addressable_lambda:
-          name: VSC
-          update_interval: 180ms
-          lambda: |-
-            static bool toggle = false;
-            toggle = !toggle;
-
-            if (toggle) {
-              it.range(0, 5) = Color(255,255,0);
-              it.range(6, 23) = Color(0,0,0);
-            } else {
-              it.range(0, 17) = Color(0,0,0);
-              it.range(18, 23) = Color(255,255,0);
-            }
-
-      - addressable_lambda:
-          name: SC
-          update_interval: 180ms
-          lambda: |-
-            static bool toggle = false;
-            toggle = !toggle;
-
-            if (toggle) {
-              it.range(0, 5) = Color(255,180,0);
-              it.range(6, 23) = Color(0,0,0);
-            } else {
-              it.range(0, 17) = Color(0,0,0);
-              it.range(18, 23) = Color(255,180,0);
-            }
-
-      - addressable_lambda:
-          name: RACEWEEK
-          update_interval: 200ms
-          lambda: |-
-            it.range(23, 79) = Color(255,0,0);
