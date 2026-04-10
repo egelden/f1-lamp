@@ -104,6 +104,14 @@ jobs:
             -t "f1/firmware/latest" \
             -m "${{ steps.version.outputs.version }}" \
             -r
+      - name: Publish firmware URL to MQTT
+        run: |
+          mosquitto_pub -h gelden.ddns.net -p 2105 \
+            -u "${{ secrets.MQTT_USER }}" \
+            -P "${{ secrets.MQTT_PASS }}" \
+            -t "f1/firmware/url" \
+            -m "https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp-OTA.bin" \
+            -r
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
