@@ -63,33 +63,45 @@ mqtt:
           id(mqtt_ok) = true;
       - script.execute: try_startup
 
-  on_message:
-    - topic: f1/f1_track_status/state
-      qos: 0
-      then:
-        - lambda: |-
-            id(track_state) = x.c_str();
-            std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
+on_message:
+  - topic: f1/f1_track_status/state
+    qos: 0
+    then:
+      - lambda: |-
+          id(track_state) = x.c_str();
+          std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
 
-    - topic: f1/f1_race_week/state
-      qos: 0
-      then:
-        - lambda: |-
-            std::string s = x.c_str();
-            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
-            id(raceweek_state) = (s == "ON");
+          // Forceer terug naar f1_live, behalve tijdens OTA
+          if (!id(ota_in_progress)) {
+            id(f1_strip).turn_on().set_effect("f1_live").perform();
+          }
 
-    - topic: f1/firmware/latest
-      qos: 0
-      then:
-        - lambda: |-
-            id(latest_firmware_sensor).publish_state(x.c_str());
-    
-    - topic: f1/firmware/url
-      then:
-        - lambda: |-
-            id(firmware_url) = x.c_str();
-            ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
+  - topic: f1/f1_race_week/state
+    qos: 0
+    then:
+      - lambda: |-
+          std::string s = x.c_str();
+          std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+          id(raceweek_state) = (s == "ON");
+
+          // Forceer terug naar f1_live, behalve tijdens OTA
+          if (!id(ota_in_progress)) {
+            id(f1_strip).turn_on().set_effect("f1_live").perform();
+          }
+
+  - topic: f1/firmware/latest
+    qos: 0
+    then:
+      - lambda: |-
+          id(latest_firmware_sensor).publish_state(x.c_str());
+
+  - topic: f1/firmware/url
+    qos: 0
+    then:
+      - lambda: |-
+          id(firmware_url) = x.c_str();
+          ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
+
 
 globals:
   - id: track_state
@@ -123,6 +135,11 @@ globals:
     type: std::string
     initial_value: ""
     restore_value: False
+
+  - id: ota_in_progress
+    type: bool
+    restore_value: no
+    initial_value: "false"
 
 text_sensor:
   - platform: template
@@ -161,6 +178,10 @@ script:
   - id: do_ota
     then:
       - logger.log: "OTA gestart via HTTP..."
+
+      - lambda: |-
+          id(ota_in_progress) = true;
+      
       # ⭐ Status LEDs blauw laten glowen tijdens OTA
       - light.turn_on:
           id: f1_strip
@@ -319,33 +340,33 @@ light:
           lambda: |-
             it.range(0, 23) = Color(0,255,0);
 
-      - addressable_lambda:
-          name: VSCEND
-          update_interval: 30ms
-          lambda: |-
-            it.range(0, 5) = Color(255,255,0);
-            it.range(18, 23) = Color(255,255,0);
+      #- addressable_lambda:
+      #    name: VSCEND
+      #    update_interval: 30ms
+      #    lambda: |-
+      #      it.range(0, 5) = Color(255,255,0);
+      #      it.range(18, 23) = Color(255,255,0);
 
-            const float speed = 0.005;
-            float t = millis() * speed;
-            float breath = (sin(t) + 1.0f) / 2.0f;
-            int g = int(255 * breath);
+      #      const float speed = 0.005;
+      #      float t = millis() * speed;
+      #      float breath = (sin(t) + 1.0f) / 2.0f;
+      #      int g = int(255 * breath);
 
-            it.range(6, 17) = Color(0, g, 0);
+      #      it.range(6, 17) = Color(0, g, 0);
 
-      - addressable_lambda:
-          name: SCEND
-          update_interval: 30ms
-          lambda: |-
-            it.range(0, 5) = Color(255,180,0);
-            it.range(18, 23) = Color(255,180,0);
+      #- addressable_lambda:
+      #    name: SCEND
+      #    update_interval: 30ms
+      #    lambda: |-
+      #      it.range(0, 5) = Color(255,180,0);
+      #      it.range(18, 23) = Color(255,180,0);
 
-            const float speed = 0.005;
-            float t = millis() * speed;
-            float breath = (sin(t) + 1.0f) / 2.0f;
-            int g = int(255 * breath);
+      #      const float speed = 0.005;
+      #      float t = millis() * speed;
+      #      float breath = (sin(t) + 1.0f) / 2.0f;
+      #      int g = int(255 * breath);
 
-            it.range(6, 17) = Color(0, g, 0);
+      #      it.range(6, 17) = Color(0, g, 0);
 
       - addressable_lambda:
           name: YELLOW
