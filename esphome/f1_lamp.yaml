@@ -161,6 +161,12 @@ script:
   - id: do_ota
     then:
       - logger.log: "OTA gestart via HTTP..."
+      # ⭐ Status LEDs blauw laten glowen tijdens OTA
+      - light.turn_on:
+          id: f1_strip
+          effect: "OTA_BLUE_GLOW"
+
+      # ⭐ OTA uitvoeren
       - ota.http_request.flash:
           url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
           md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
@@ -392,3 +398,19 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(23, 79) = Color(255,0,0);
+
+      - addressable_lambda:
+          name: OTA_BLUE_GLOW
+          update_interval: 30ms
+          lambda: |-
+            // Fade alles eerst weg
+            it.all().fade_to_black(40);
+
+            // Blauwe ademende glow
+            const float speed = 0.004;
+            float t = millis() * speed;
+            float breath = (sin(t) + 1.0f) / 2.0f;  // 0 → 1
+            int b = int(200 * breath);             // max 200 blauw
+
+            // Alleen de eerste 24 LEDs
+            it.range(0, 23) = Color(0, 0, b);
