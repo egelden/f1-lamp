@@ -72,8 +72,8 @@ mqtt:
             std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
 
             // Forceer terug naar f1_live, behalve tijdens OTA
-            if (!id(ota_in_progress)) {
-              id(f1_strip).turn_on().set_effect("f1_live").perform();
+            if (!id(ota_in_progress) && !id(startup_active)) {
+                id(f1_strip).turn_on().set_effect("f1_live").perform();
             }
 
     - topic: f1/f1_race_week/state
@@ -85,8 +85,8 @@ mqtt:
             id(raceweek_state) = (s == "ON");
 
             // Forceer terug naar f1_live, behalve tijdens OTA
-            if (!id(ota_in_progress)) {
-              id(f1_strip).turn_on().set_effect("f1_live").perform();
+            if (!id(ota_in_progress) && !id(startup_active)) {
+                id(f1_strip).turn_on().set_effect("f1_live").perform();
             }
 
     - topic: f1/firmware/latest
@@ -140,6 +140,11 @@ globals:
     type: bool
     restore_value: no
     initial_value: "false"
+
+  - id: startup_active
+    type: bool
+    restore_value: no
+    initial_value: "true"
 
 text_sensor:
   - platform: template
@@ -290,13 +295,15 @@ light:
             }
 
             if (step > 5) {
-              step = 0;
-              wait_time = 0;
-              id(startup_done) = true;
+                step = 0;
+                wait_time = 0;
+                id(startup_done) = true;
 
-              auto on = id(f1_strip).turn_on();
-              on.set_effect("f1_live");
-              on.perform();
+                id(startup_active) = false;   // ⭐ Startup is nu klaar
+
+                auto on = id(f1_strip).turn_on();
+                on.set_effect("f1_live");
+                on.perform();
             }
 
       - addressable_lambda:
