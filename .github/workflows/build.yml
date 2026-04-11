@@ -104,6 +104,22 @@ jobs:
       - name: Install mosquitto clients
         run: sudo apt-get update && sudo apt-get install -y mosquitto-clients
   
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-lamp-firmware
+          path: build/
+
+      - name: Commit build artifacts
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add build/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-build firmware"
+          git push
+
       - name: Publish latest version to MQTT
         run: |
           mosquitto_pub -h gelden.ddns.net -p 2105 \
@@ -120,18 +136,3 @@ jobs:
             -t "f1/firmware/url" \
             -m "https://raw.githubusercontent.com/${{ github.repository }}/main/build/f1-lamp-OTA.bin" \
             -r
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: f1-lamp-firmware
-          path: build/
-
-      - name: Commit build artifacts
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add build/
-          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-build firmware"
-          git push
