@@ -177,17 +177,17 @@ script:
           effect: startup_lightsout
   - id: do_ota
     then:
-      - logger.log: "OTA gestart via HTTP..."
-
+      - id: do_ota
+    then:
       - lambda: |-
-          id(ota_in_progress) = true;
-      
-      # ⭐ Status LEDs blauw laten glowen tijdens OTA
+          id(ota_in_progress) = true;   // ⭐ Eerst OTA-flag zetten
+
       - light.turn_on:
           id: f1_strip
-          effect: "OTA_BLUE_GLOW"
+          effect: "OTA_BLUE_GLOW"       // ⭐ Dan pas het effect
 
-      # ⭐ OTA uitvoeren
+      - logger.log: "OTA gestart via HTTP..."
+
       - ota.http_request.flash:
           url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
           md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
@@ -196,6 +196,12 @@ interval:
   - interval: 10s
     then:
       - lambda: |-
+          // 0. OTA bezig? Dan niets doen
+          if (id(ota_in_progress)) {
+            ESP_LOGI("ota", "OTA bezig — interval check overgeslagen");
+            return;
+          }
+
           // 1. Wacht tot WiFi verbonden is
           if (!id(wifi_ok)) {
             ESP_LOGI("ota", "Wachten op WiFi...");
@@ -217,11 +223,12 @@ interval:
           // 4. Check of de firmware al up-to-date is
           if (id(latest_firmware_sensor).state == id(firmware_version_global)) {
             return;
-          } 
+          }
 
           // 5. Nieuwe firmware gedetecteerd → OTA starten
           ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA wordt gestart!");
           id(do_ota).execute();
+
 
 
 light:
