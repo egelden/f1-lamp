@@ -63,44 +63,44 @@ mqtt:
           id(mqtt_ok) = true;
       - script.execute: try_startup
 
-on_message:
-  - topic: f1/f1_track_status/state
-    qos: 0
-    then:
-      - lambda: |-
-          id(track_state) = x.c_str();
-          std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
+  on_message:
+    - topic: f1/f1_track_status/state
+      qos: 0
+      then:
+        - lambda: |-
+            id(track_state) = x.c_str();
+            std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
 
-          // Forceer terug naar f1_live, behalve tijdens OTA
-          if (!id(ota_in_progress)) {
-            id(f1_strip).turn_on().set_effect("f1_live").perform();
-          }
+            // Forceer terug naar f1_live, behalve tijdens OTA
+            if (!id(ota_in_progress)) {
+              id(f1_strip).turn_on().set_effect("f1_live").perform();
+            }
 
-  - topic: f1/f1_race_week/state
-    qos: 0
-    then:
-      - lambda: |-
-          std::string s = x.c_str();
-          std::transform(s.begin(), s.end(), s.begin(), ::toupper);
-          id(raceweek_state) = (s == "ON");
+    - topic: f1/f1_race_week/state
+      qos: 0
+      then:
+        - lambda: |-
+            std::string s = x.c_str();
+            std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+            id(raceweek_state) = (s == "ON");
 
-          // Forceer terug naar f1_live, behalve tijdens OTA
-          if (!id(ota_in_progress)) {
-            id(f1_strip).turn_on().set_effect("f1_live").perform();
-          }
+            // Forceer terug naar f1_live, behalve tijdens OTA
+            if (!id(ota_in_progress)) {
+              id(f1_strip).turn_on().set_effect("f1_live").perform();
+            }
 
-  - topic: f1/firmware/latest
-    qos: 0
-    then:
-      - lambda: |-
-          id(latest_firmware_sensor).publish_state(x.c_str());
+    - topic: f1/firmware/latest
+      qos: 0
+      then:
+        - lambda: |-
+            id(latest_firmware_sensor).publish_state(x.c_str());
 
-  - topic: f1/firmware/url
-    qos: 0
-    then:
-      - lambda: |-
-          id(firmware_url) = x.c_str();
-          ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
+    - topic: f1/firmware/url
+      qos: 0
+      then:
+        - lambda: |-
+            id(firmware_url) = x.c_str();
+            ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
 
 
 globals:
