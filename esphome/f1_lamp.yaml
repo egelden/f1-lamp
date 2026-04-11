@@ -185,10 +185,12 @@ script:
       - lambda: |-
           id(ota_in_progress) = true;   // ⭐ Eerst OTA-flag zetten
 
-      - light.turn_on:
+      - light.turn_on:                  // ⭐ Blauwe Lamp aanzetten
           id: f1_strip
           effect: "OTA_BLUE_GLOW"
-
+      
+      - delay: 4s                       // ⭐ Wacht 4 Seconden
+      
       - logger.log: "OTA gestart via HTTP..."
 
       - ota.http_request.flash:
