@@ -71,7 +71,6 @@ mqtt:
             id(track_state) = x.c_str();
             std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
 
-            // Forceer terug naar f1_live, behalve tijdens OTA
             if (!id(ota_in_progress) && !id(startup_active)) {
                 id(f1_strip).turn_on().set_effect("f1_live").perform();
             }
@@ -82,9 +81,10 @@ mqtt:
         - lambda: |-
             std::string s = x.c_str();
             std::transform(s.begin(), s.end(), s.begin(), ::toupper);
-            id(raceweek_state) = (s == "ON");
 
-            // Forceer terug naar f1_live, behalve tijdens OTA
+            // Respecteer toggle
+            id(raceweek_state) = (s == "ON") && id(raceweek_enabled).state;
+
             if (!id(ota_in_progress) && !id(startup_active)) {
                 id(f1_strip).turn_on().set_effect("f1_live").perform();
             }
@@ -146,6 +146,16 @@ globals:
     restore_value: no
     initial_value: "true"
 
+
+# ⭐ NIEUWE TOGGLE
+switch:
+  - platform: template
+    name: "Raceweek LEDs"
+    id: raceweek_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+
 text_sensor:
   - platform: template
     name: "Installed Firmware Version"
@@ -180,57 +190,34 @@ script:
       - light.turn_on:
           id: f1_strip
           effect: startup_lightsout
+
   - id: do_ota
     then:
       - lambda: |-
-          id(ota_in_progress) = true;   // ⭐ Eerst OTA-flag zetten
+          id(ota_in_progress) = true;
 
-      - light.turn_on:                  
+      - light.turn_on:
           id: f1_strip
           effect: "OTA_BLUE_GLOW"
       
-      - delay: 4s                       
-      
+      - delay: 4s
       - logger.log: "OTA gestart via HTTP..."
 
       - ota.http_request.flash:
           url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin"
           md5_url: "https://raw.githubusercontent.com/egelden/f1-lamp/main/build/f1-lamp-OTA.bin.md5"
 
+
 interval:
   - interval: 10s
     then:
       - lambda: |-
-          // 0. OTA bezig? Dan niets doen
-          if (id(ota_in_progress)) {
-            ESP_LOGI("ota", "OTA bezig — interval check overgeslagen");
-            return;
-          }
+          if (id(ota_in_progress)) return;
+          if (!id(wifi_ok)) return;
+          if (!id(mqtt_ok)) return;
+          if (id(latest_firmware_sensor).state.empty()) return;
+          if (id(latest_firmware_sensor).state == id(firmware_version_global)) return;
 
-          // 1. Wacht tot WiFi verbonden is
-          if (!id(wifi_ok)) {
-            ESP_LOGI("ota", "Wachten op WiFi...");
-            return;
-          }
-
-          // 2. Wacht tot MQTT verbonden is
-          if (!id(mqtt_ok)) {
-            ESP_LOGI("ota", "Wachten op MQTT...");
-            return;
-          }
-
-          // 3. Wacht tot latest_firmware_sensor een waarde heeft
-          if (id(latest_firmware_sensor).state.empty()) {
-            ESP_LOGI("ota", "Nog geen firmware info ontvangen...");
-            return;
-          }
-
-          // 4. Check of de firmware al up-to-date is
-          if (id(latest_firmware_sensor).state == id(firmware_version_global)) {
-            return;
-          }
-
-          // 5. Nieuwe firmware gedetecteerd → OTA starten
           ESP_LOGI("ota", "Nieuwe firmware gedetecteerd — OTA wordt gestart!");
           id(do_ota).execute();
 
@@ -301,7 +288,7 @@ light:
                 wait_time = 0;
                 id(startup_done) = true;
 
-                id(startup_active) = false;   // ⭐ Startup is nu klaar
+                id(startup_active) = false;
 
                 auto on = id(f1_strip).turn_on();
                 on.set_effect("f1_live");
@@ -344,7 +331,8 @@ light:
                 it.range(18, 23) = Color(255,180,0);
             }
 
-            if (id(raceweek_state)) {
+            // ⭐ Raceweek alleen als toggle aan staat
+            if (id(raceweek_enabled).state && id(raceweek_state)) {
               it.range(23, 79) = Color(255,0,0);
             }
 
@@ -353,34 +341,6 @@ light:
           update_interval: 200ms
           lambda: |-
             it.range(0, 23) = Color(0,255,0);
-
-      #- addressable_lambda:
-      #    name: VSCEND
-      #    update_interval: 30ms
-      #    lambda: |-
-      #      it.range(0, 5) = Color(255,255,0);
-      #      it.range(18, 23) = Color(255,255,0);
-
-      #      const float speed = 0.005;
-      #      float t = millis() * speed;
-      #      float breath = (sin(t) + 1.0f) / 2.0f;
-      #      int g = int(255 * breath);
-
-      #      it.range(6, 17) = Color(0, g, 0);
-
-      #- addressable_lambda:
-      #    name: SCEND
-      #    update_interval: 30ms
-      #    lambda: |-
-      #      it.range(0, 5) = Color(255,180,0);
-      #      it.range(18, 23) = Color(255,180,0);
-
-      #      const float speed = 0.005;
-      #      float t = millis() * speed;
-      #      float breath = (sin(t) + 1.0f) / 2.0f;
-      #      int g = int(255 * breath);
-
-      #      it.range(6, 17) = Color(0, g, 0);
 
       - addressable_lambda:
           name: YELLOW
@@ -438,14 +398,11 @@ light:
           name: OTA_BLUE_GLOW
           update_interval: 30ms
           lambda: |-
-            // Fade alles eerst weg
             it.all().fade_to_black(40);
 
-            // Blauwe ademende glow
             const float speed = 0.004;
             float t = millis() * speed;
-            float breath = (sin(t) + 1.0f) / 2.0f;  // 0 → 1
-            int b = int(200 * breath);             // max 200 blauw
+            float breath = (sin(t) + 1.0f) / 2.0f;
+            int b = int(200 * breath);
 
-            // Alleen de eerste 24 LEDs
             it.range(0, 23) = Color(0, 0, b);
