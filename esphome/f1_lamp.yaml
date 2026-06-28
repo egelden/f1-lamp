@@ -64,6 +64,27 @@ mqtt:
       - script.execute: try_startup
 
   on_message:
+    - topic: f1/f1_race_control/state
+      qos: 0
+      then:
+        - lambda: |-
+            std::string rc = x.c_str();
+            std::transform(rc.begin(), rc.end(), rc.begin(), ::toupper);
+
+            // VSC ENDING → nieuw effect
+            if (rc == "VSC ENDING") {
+                if (!id(ota_in_progress) && !id(startup_active)) {
+                    id(f1_strip).turn_on().set_effect("VSCEND").perform();
+                }
+            }
+
+            // SC ENDING → optioneel, jij hebt SCEND effect al
+            if (rc == "SAFETY CAR IN THIS LAP") {
+                if (!id(ota_in_progress) && !id(startup_active)) {
+                    id(f1_strip).turn_on().set_effect("SCEND").perform();
+                }
+            }
+
     - topic: f1/f1_track_status/state
       qos: 0
       then:
@@ -71,6 +92,18 @@ mqtt:
             id(track_state) = x.c_str();
             std::transform(id(track_state).begin(), id(track_state).end(), id(track_state).begin(), ::toupper);
 
+            // Markeer dat we nu een echte track status hebben ontvangen
+            if (id(track_state) != "UNAVAILABLE") {
+                id(track_state_initialized) = true;
+            }
+
+            // Fallback alleen als we nog NOOIT een echte status hebben gehad
+            if (!id(track_state_initialized) && id(session_state) == "LIVE") {
+                id(f1_strip).turn_on().set_effect("CLEAR").perform();
+                return;
+            }
+
+            // Normale logica
             if (!id(ota_in_progress) && !id(startup_active)) {
                 id(f1_strip).turn_on().set_effect("f1_live").perform();
             }
@@ -101,6 +134,20 @@ mqtt:
         - lambda: |-
             id(firmware_url) = x.c_str();
             ESP_LOGI("ota", "Firmware URL updated to: %s", id(firmware_url).c_str());
+
+    - topic: f1/f1_session_status/state
+      qos: 0
+      then:
+        - lambda: |-
+            id(session_state) = x.c_str();
+            std::transform(id(session_state).begin(), id(session_state).end(), id(session_state).begin(), ::toupper);
+
+            // Als track_state nog UNAVAILABLE is maar sessie is LIVE → CLEAR tonen
+            if (id(track_state) == "UNAVAILABLE" && id(session_state) == "LIVE") {
+                if (!id(ota_in_progress) && !id(startup_active)) {
+                    id(f1_strip).turn_on().set_effect("CLEAR").perform();
+                }
+            }
 
 
 globals:
@@ -145,6 +192,16 @@ globals:
     type: bool
     restore_value: no
     initial_value: "true"
+
+  - id: session_state
+    type: std::string
+    initial_value: '"UNAVAILABLE"'
+    restore_value: false
+
+  - id: track_state_initialized
+    type: bool
+    initial_value: "false"
+    restore_value: false
 
 
 # ⭐ NIEUWE TOGGLE
@@ -406,3 +463,31 @@ light:
             int b = int(200 * breath);
 
             it.range(0, 23) = Color(0, 0, b);
+      
+      - addressable_lambda:
+          name: VSCEND
+          update_interval: 30ms
+          lambda: |-
+            it.range(0, 5) = Color(255,255,0);
+            it.range(18, 23) = Color(255,255,0);
+
+            const float speed = 0.005;
+            float t = millis() * speed;
+            float breath = (sin(t) + 1.0f) / 2.0f;
+            int g = int(255 * breath);
+
+            it.range(6, 17) = Color(0, g, 0);
+
+      - addressable_lambda:
+          name: SCEND
+          update_interval: 30ms
+          lambda: |-
+            it.range(0, 5) = Color(255,180,0);
+            it.range(18, 23) = Color(255,180,0);
+
+            const float speed = 0.005;
+            float t = millis() * speed;
+            float breath = (sin(t) + 1.0f) / 2.0f;
+            int g = int(255 * breath);
+
+            it.range(6, 17) = Color(0, g, 0);
