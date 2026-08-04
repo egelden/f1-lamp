@@ -1,4 +1,4 @@
-<<: !include build_info.yaml
+<: !include build_info.yaml
 #
 esphome:
   name: f1_lamp
@@ -227,6 +227,12 @@ text_sensor:
     id: latest_firmware_sensor
     icon: "mdi:update"
     update_interval: 5s
+
+  - platform: template
+    name: "F1 Dashboard Link"
+    id: f1_dashboard_link
+    lambda: |-
+      return "🌐 http://api.gelden.net/lamp-info";
 
 binary_sensor:
   - platform: template
