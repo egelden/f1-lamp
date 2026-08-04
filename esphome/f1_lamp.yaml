@@ -1,4 +1,5 @@
-<: !include build_info.yaml
+packages:
+  build_info: !include build_info.yaml
 #
 esphome:
   name: f1_lamp
